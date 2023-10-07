@@ -1,0 +1,35 @@
+# set docker compose version to the latest one as of oct'23
+version: "3.8"
+# specifies services/container we want to run
+services:
+  # definition for item-app (node) container
+  item-app:
+    # use container image that has been built and pushed to github packages
+    image: ghcr.io/randkyp/item-app:v1
+    # start the item-db container first before launching item-app
+    depends_on:
+      - item-db
+    # publish port 8080 from the container side to port 80 on the host
+    ports:
+      - 80:8080 
+    # optional criteria: always restart container if it has failed/stopped
+    # note that restart_policy (services:service-name:deploy:restart_policy)
+    # only applies to docker swarm and is ignored by docker compose up et al
+    # (ref: https://docs.docker.com/compose/compose-file/compose-file-v3/#deploy)
+    restart: always
+  # definition for item-db (mongo) container
+  item-db:
+    # pulls the mongo:3 container image from Docker Hub (library/mongo:3)
+    image: mongo:3
+    # mounts the app-db volume (defined below) to /data/db inside the container
+    volumes:
+      - app-db:/data/db
+    # optional criteria: always restart container if it has failed/stopped
+    restart: always
+# start of volume definitions. volumes will be created if it doesn't exist
+volumes:
+  # defining app-db here is optional since docker will automatically create a
+  # volume if it doesn't exist, but it adds clarity wrt. which volumes this
+  # docker compose stack needs / uses. existing named volumes will be reused
+  # on current/future `docker-compuse up` launches.
+  app-db:
