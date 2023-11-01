@@ -3,52 +3,100 @@ version: 2.1
 
 # Define a job to be invoked later in a workflow.
 jobs:
+  # define the job for linting the karsajobs repo's Dockerfile
   lint-dockerfile:
+    # specify and configure Docker executor for this job
     docker:
+      # pull CircleCI's base "convenience image"; comes with basic tools
       - image: cimg/base:current
+    # define and list the steps for this particular CI/CD job
     steps:
+      # clone the repository to the default path (working directory. ~/project)
+      # note that the working directory is configurable through a separate prop
+      # (steps.working_directory)
       - checkout
+      # set up a remote docker instance so that we can run the hadolint
+      # container image -- hadolint versions in distro repos might be outdated
       - setup_remote_docker
+      # run the specified shell commands for linting
       - run:
+          # labels this particular step in the UI, giving it its own section
           name: Lint karsajobs Dockerfile with hadolint
+          # run the specified command(s) in the docker container chosen before
+          # note that the docker CLI runs in the base:current container, but
+          # the docker host itself is remote (setup_remote_docker). this is not
+          # a docker-in-docker setup.
           command: docker run --rm --interactive hadolint/hadolint < Dockerfile
+  # define the job to run unit tests on the karsajobs repo's go code
   test-app:
+    # specify and configure Docker executor for this job
     docker:
-      # pull circleci's "convenience image" to test + later build
       # matched go version with one mentioned in karsajobs' Dockerfile
       - image: cimg/go:1.15
+    # define and list the steps for this particular CI/CD job
     steps:
+    # checkout the repository to the (default) working directory (~/project)
       - checkout
+      # run the specified shell commands for unit testing
       - run:
+          # labels this particular step in the UI, giving it its own section
           name: Run karsajobs backend unit store_test_results
+          # runs the provided unit test commands
           command: go test -v -short --count=1 $(go list ./...)
+  # define the job to build and push the backend as a Docker image to GHCR
   build-app-karsajobs:
+  # specify and configure Docker executor for this job
     docker:
-      - image: cimg/go:1.15
+      # pull CircleCI's base "convenience image"; comes with basic tools
+      - image: cimg/base:current
+    # define and list the steps for this particular CI/CD job
     steps:
+      # clone the repository to the default path (working directory. ~/project)
       - checkout
+      # set up a remote docker instance so that we can run docker build
       - setup_remote_docker
+      # run the specified shell commands for building and pushing the image
       - run:
+          # labels this particular step in the UI, giving it its own section
           name: Build and push image to GHCR
+          # runs the shell script in the repo that does all the building and
+          # pushing. the $CR_PAT environment variable for GHCR has already been
+          # added to the CircleCI's project.
           command: |
+            # makes sure that our shell script is executable
             chmod +x ./build_push_image_karsajobs.sh
+            # runs the aformentioned shell script
             bash ./build_push_image_karsajobs.sh
   
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
+  # I named this particular workflow "karsajobs"
   karsajobs:
+    # defines the jobs that will be run, when, and in what order
     jobs:
+      # first, run the lint-dockerfile job as specified above
       - lint-dockerfile:
+          # only run this CI/CD job when the karsajobs git repo has new commits
           filters:
             branches:
               only: karsajobs
+      # second, the test-app go unit test job
       - test-app:
+          # only run this CI/CD job when the karsajobs git repo has new commits
           filters:
             branches:
               only: karsajobs
+      # finally, run the build + push shell script job
       - build-app-karsajobs:
+          # only run this CI/CD job when the karsajobs git repo has new commits
           filters:
             branches:
               only: karsajobs
+          # by default, CircleCI jobs run in parallel. `requires` allows us to
+          # specify that it should only run the build job only after the lint
+          # and test jobs finishes cleanly
+          requires:
+            - lint-dockerfile
+            - test-app
