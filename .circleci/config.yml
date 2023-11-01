@@ -11,7 +11,7 @@ jobs:
       - checkout
       - run:
           name: Lint karsajobs Dockerfile with hadolint
-          command: hadolint ~/karsajobs/Dockerfile
+          command: hadolint ./Dockerfile
   test-app:
     working_directory: ~/karsajobs
     docker:
@@ -29,6 +29,7 @@ jobs:
       - image: cimg/go:1.15
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Build and push image to GHCR
           command: |
