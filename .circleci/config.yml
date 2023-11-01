@@ -8,6 +8,7 @@ jobs:
       - image: cimg/base:current
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Lint karsajobs Dockerfile with hadolint
           command: docker run --rm --interactive hadolint/hadolint < Dockerfile
