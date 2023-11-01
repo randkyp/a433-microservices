@@ -4,16 +4,14 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 jobs:
   lint-dockerfile:
-    working_directory: ~/karsajobs
     docker:
-      - image: hadolint/hadolint
+      - image: cimg/base:current
     steps:
       - checkout
       - run:
           name: Lint karsajobs Dockerfile with hadolint
-          command: hadolint ./Dockerfile
+          command: docker run --rm --interactive hadolint/hadolint < Dockerfile
   test-app:
-    working_directory: ~/karsajobs
     docker:
       # pull circleci's "convenience image" to test + later build
       # matched go version with one mentioned in karsajobs' Dockerfile
@@ -24,7 +22,6 @@ jobs:
           name: Run karsajobs backend unit store_test_results
           command: go test -v -short --count=1 $(go list ./...)
   build-app-karsajobs:
-    working_directory: ~/karsajobs
     docker:
       - image: cimg/go:1.15
     steps:
