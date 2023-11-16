@@ -1,0 +1,4 @@
+# exclude node_modules to help avoid dependency weirdness inside the container
+node_modules
+# exclude .git directory to make the image more compact
+.git
