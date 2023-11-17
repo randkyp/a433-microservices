@@ -43,6 +43,7 @@ async function connectToQueue() {
 }
 
 // start the express server on the specified port
+// currently the code doesn't do anything with its listening port (no endpoints)
 app.listen(process.env.PORT, () => {
     // print the server start message to the console
     console.log(`Server running at ${process.env.PORT}`);
