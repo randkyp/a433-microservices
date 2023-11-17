@@ -8,7 +8,11 @@ COPY . .
 # install npm packages, making sure to stick to versions explicitly defined in
 # package-lock.json
 RUN npm ci
+# add wait-for-it script
+RUN apk add --no-cache bash
+RUN wget -O /bin/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+RUN chmod +x /bin/wait-for-it.sh
 # annotate the app's port, as defined in .env
 EXPOSE 3000
-# run the order-service app
-CMD ["npm", "run", "start"]
+# run the order-service app, waiting for the RabbitMQ service to be available
+CMD ["/bin/wait-for-it.sh", "rabbitmq:5672", "--", "npm", "run", "start"]
